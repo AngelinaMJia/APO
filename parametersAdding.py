@@ -22,26 +22,29 @@ model.cp313 = Param(model.c, initialize=cp_313_data)
 cp_393_data={'CH3': 58.02, 'CH2': 30.10, 'CH': 22.93, 'C': -6.66, '=CH': 38.17, '=C':-0.17, 'NH2':68.48, 
               'NH':57.87, 'N':9.68, '=N':13.04, 'OH':70.33, 'O':30.57, '=O':36.65
             }
-
 model.cp393 = Param(model.c, initialize=cp_393_data)
 
+#here maybe a group count, like 
+#group_count = {'CH3': 1, 'CH2': 1, 'CH': 1, etc}
+
 #the calculation for cps
- 
+#do the summation as a loop 
+model.n_groups = Param(model.c, initialize={g: group_count.get(g, 0) for g in model.c})
+
+#define both as constraints since calculated and is not known before optimization begins 
+model.cp313_constraint_rule = Var(bounds = (0, None))
+model.cp393_constraint_rule = Var(bounds = (0, None))
+
+#from the "pop-quiz equations" slide 
+def cp313_constraint_rule(model):
+    return model.cp_313_total == sum(model.n_groups[g] * model.cp313[g] for g in model.c)
+model.cp313_constraint = Constraint(rule=cp313_constraint_rule)
+
+def cp393_constraint_rule(model):
+    return model.cp_393_total == sum(model.n_groups[g] * model.cp393[g] for g in model.c)
+model.cp393_constraint = Constraint(rule=cp393_constraint_rule)
 
 
+print(f"Cp_313 (J/mol·K): {value(model.cp_313_total):.2f}")
+print(f"Cp_393 (J/mol·K): {value(model.cp_393_total):.2f}")
 print("done")
-
-
-'''
-# Gibbs standard free energy
-gibbs_data = {
-    'H': -10.021, 'H2': -21.096, 'H2O': -37.986, 'N': -9.846, 'N2': -28.653,
-    'NH': -18.918, 'NO': -28.032, 'O': -14.64, 'O2': -30.594, 'OH': -26.11
-}
-model.g = Param(model.c, initialize=gibbs_data)
-#So now, inside Pyomo you can reference model.g['H2O'] and get -37.986
-
-# Gibbs standard free energy + pressure term
-gibbs_p_data = {c : gibbs_data[c] + math.log(750 * 0.07031) for c in gibbs_data.keys()}
-model.g_p = Param(model.c, initialize=gibbs_p_data)
-'''
