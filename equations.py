@@ -40,6 +40,8 @@ model.G1_Hukkerikar = pe.Set(initialize=[
     'CH=N',    # Group #66 ('=N')
 ])
 
+
+#we can get rid of this though? 
 # --- (Loris) Set of 2nd-Order Groups (G2_Hukkerikar) ---
 model.G2_Hukkerikar = pe.Set(initialize=[
     '(CH3)2CH',  # Correction for 2x CH3 + 1x CH
@@ -64,6 +66,7 @@ model.Cp_Groups.pprint()
 
 
 # Defining Parameters
+UB_num_groups= 10 #upper bound on the number of groups the molecule can have- used in constraint model.c_num_of_groups 
 
 # --- Heat Capacity Cp Parameters ---
 cp_313_data={'CH3': 43.56, 'CH2': 31.40, 'CH': 48.19, 'C': 10.04, '=CH': 21.24, '=C':-0.81, 'NH2':58.40,
@@ -262,13 +265,37 @@ model.N.pprint()
 #---Angelina Cp calculations---
 #will neeed to rename/intialize something for this, but basically have something with the number of each group
 #^needs to be the same key (group name like "CH3" as what is defined in the cp313_data)
-model.n_groups = pe.Param(model.c, initialize={g: group_count.get(g, 0) for g in model.c})
+model.n_groups = pe.Param(model.c, initialize={i: group_count.get(i, 0) for i in model.G1_Hukkerikar})
 
-
+#rule format for summations from tutorial - these don't look right 
 def cp313_rule(model):
-    return model.cp_313_total == sum(model.n_groups[g] * model.cp313[g] for g in model.c)
-model.cp313_constraint = pe.Constraint(rule=cp313_rule)
+    return model.cp_313_total == sum(model.n_groups[i] * model.cp313[i] for i in model.G1_Hukkerikar)
+model.cp313_sum = pe.Constraint(rule=cp313_rule)
 
 def cp393_rule(model):
-    return model.cp_393_total == sum(model.n_groups[g] * model.cp393[g] for g in model.c)
-model.cp393_constraint = pe.Constraint(rule=cp393_rule)
+    return model.cp_393_total == sum(model.n_groups[i] * model.cp393[i] for i in model.G1_Hukkerikar)
+model.cp393_sum = pe.Constraint(rule=cp393_rule)
+
+# chemical feasibility 
+# assuming group type (GT) and valency (v) is defined already for the groups present
+#octet rule: (n is number of group present, m is molecule type)
+model.c_octect = pe.Constraint(
+    expr = sum((2-model.v[i])*model.n_groups[i] for i in model.G1_Hukkerikar) -2*model.m == 0 
+)
+
+#bonding rule (cant have two adjacent groups bonded twice), iterating for each group so use rule 
+def bonding_rule(model, j) #for each group
+    bonding_check = model.n_groups[j]*(model.v[j]-1) + 2 - sum(model.n_groups[i] for i in model.G1_Hukkerikar)
+    return bonding_check[j] <= 0
+model.c_bonding = pe.Constraint(model.G1_Hukkerikar, rule=bonding_rule)
+
+#prob add unsaturated bond rule 
+
+#Upper bound on number of groups in molecule:
+model.c_num_of_groups = pe.Constraint(
+    expr = sum(model.n_groups[i] for i in model.G1_Hukkerikar) <= UB_num_groups
+)
+
+
+#---Objectibe function here-- 
+#notes on zotero/offline, hopefully everything saved in meantime 
