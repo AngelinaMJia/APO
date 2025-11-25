@@ -40,14 +40,6 @@ model.G1_Hukkerikar = pe.Set(initialize=[
     'CH=N',    # Group #66 ('=N')
 ])
 
-# --- (Loris) Set of 2nd-Order Groups (G2_Hukkerikar) --- WILL DELETE, have just set to 0 for now
-model.G2_Hukkerikar = pe.Set(initialize=[
-    '(CH3)2CH',  # Correction for 2x CH3 + 1x CH
-    '(CH3)3C',   # Correction for 3x CH3 + 1x C
-    'CHOH',      # Correction for 1x CH + 1x OH
-    'COH',       # Correction for 1x C + 1x OH
-])
-
 # --- Heat Capacity Group Set ---
 # ONLY for heat capacity equations, groups differ for other method
 model.Cp_Groups = pe.Set(initialize=[
@@ -128,30 +120,10 @@ model.C_dD = pe.Param(model.G1_Hukkerikar, initialize=C_dD_data)
 model.C_dP = pe.Param(model.G1_Hukkerikar, initialize=C_dP_data)
 model.C_dH = pe.Param(model.G1_Hukkerikar, initialize=C_dH_data)
 
-# --- (Loris) G2_Hukkerikar Contributions (D_j) ---
-D_Tb_data = {'(CH3)2CH': 0.0563, '(CH3)3C': 0.0460, 'CHOH': -0.1849, 'COH': -0.3371}
-D_Tm_data = {'(CH3)2CH': 0.1542, '(CH3)3C': -0.1090, 'CHOH': 0.1715, 'COH': 0.6164}
-D_Vm_data = {'(CH3)2CH': 0.0021, '(CH3)3C': 0.0045, 'CHOH': 0.0001, 'COH': 0.0038}
-D_dD_data = {'(CH3)2CH': -0.2581, '(CH3)3C': 0.1777, 'CHOH': 0.0394, 'COH': -0.0212}
-D_dP_data = {'(CH3)2CH': 0.2698, '(CH3)3C': -0.0817, 'CHOH': 0.1176, 'COH': -1.0511}
-D_dH_data = {'(CH3)2CH': -0.1884, '(CH3)3C': 2.3617, 'CHOH': 0.6216, 'COH': -0.8848}
-
-for g2 in model.G2_Hukkerikar:
-    D_Tb_data.setdefault(g2, 0.0); D_Tm_data.setdefault(g2, 0.0); D_Vm_data.setdefault(g2, 0.0)
-    D_dD_data.setdefault(g2, 0.0); D_dP_data.setdefault(g2, 0.0); D_dH_data.setdefault(g2, 0.0)
-
-model.D_Tb = pe.Param(model.G2_Hukkerikar, initialize=D_Tb_data)
-model.D_Tm = pe.Param(model.G2_Hukkerikar, initialize=D_Tm_data)
-model.D_Vm = pe.Param(model.G2_Hukkerikar, initialize=D_Vm_data)
-model.D_dD = pe.Param(model.G2_Hukkerikar, initialize=D_dD_data)
-model.D_dP = pe.Param(model.G2_Hukkerikar, initialize=D_dP_data)
-model.D_dH = pe.Param(model.G2_Hukkerikar, initialize=D_dH_data)
-
 # Variables
 
 # Decision Variables
 model.N = pe.Var(model.G1_Hukkerikar, domain=pe.NonNegativeIntegers, bounds=(0, 10), doc="Count of 1st-order groups")
-model.M = pe.Var(model.G2_Hukkerikar, domain=pe.NonNegativeIntegers, bounds=(0, 10), doc="Count of 2nd-order groups")
 
 # Calculated Property Variables
 model.Tb_calc = pe.Var(domain=pe.Reals, bounds=(200, 1000))
@@ -164,31 +136,31 @@ model.Cp_393_calc = pe.Var(bounds=(0, None))
 # Linking Groups from Both Reports (Need to double check this is complete/correct)
 def N_Cp_mapping_rule(m, cp_group):
     if cp_group == 'CH3':
-        return m.N['CH3'] + m.N['CH3NH'] + m.N['CH3N'] + m.N['CH3CO']
+        return model.N['CH3'] + model.N['CH3NH'] + model.N['CH3N'] + model.N['CH3CO']
     if cp_group == 'CH2':
-        return m.N['CH2'] + m.N['CH2NH2'] + m.N['CH2NH'] + m.N['CH2N'] + m.N['CH2O'] + m.N['CH2CO']
+        return model.N['CH2'] + model.N['CH2NH2'] + model.N['CH2NH'] + model.N['CH2N'] + model.N['CH2O'] + model.N['CH2CO']
     if cp_group == 'CH':
-        return m.N['CH'] + m.N['CHNH2'] + m.N['CHNH']
+        return model.N['CH'] + model.N['CHNH2'] + model.N['CHNH']
     if cp_group == 'C':
-        return m.N['C'] + m.N['CNH2']
+        return model.N['C'] + model.N['CNH2']
     if cp_group == 'NH2':
-        return m.N['CH2NH2'] + m.N['CHNH2'] + m.N['CNH2']
+        return model.N['CH2NH2'] + model.N['CHNH2'] + model.N['CNH2']
     if cp_group == 'NH':
-        return m.N['CH3NH'] + m.N['CH2NH'] + m.N['CHNH']
+        return model.N['CH3NH'] + model.N['CH2NH'] + model.N['CHNH']
     if cp_group == 'N':
-        return m.N['CH3N'] + m.N['CH2N']
+        return model.N['CH3N'] + model.N['CH2N']
     if cp_group == 'OH':
-        return m.N['OH']
+        return model.N['OH']
     if cp_group == 'O': 
-        return m.N['CH2O']
+        return model.N['CH2O']
     if cp_group == '=O': 
-        return m.N['CH3CO'] + m.N['CH2CO']
+        return model.N['CH3CO'] + model.N['CH2CO']
     if cp_group == '=CH':
-        return m.N['CH2=CH'] + 2 * m.N['CH=CH'] + m.N['CH=N']
+        return model.N['CH2=CH'] + 2 * model.N['CH=CH'] + model.N['CH=N']
     if cp_group == '=C':
-        return m.N['CH2=CH']
+        return model.N['CH2=CH']
     if cp_group == '=N':
-        return m.N['CH=N']
+        return model.N['CH=N']
     return 0
 model.N_Cp = pe.Expression(model.Cp_Groups, rule=N_Cp_mapping_rule)
 
@@ -197,11 +169,11 @@ model.N_Cp = pe.Expression(model.Cp_Groups, rule=N_Cp_mapping_rule)
 
 # Heat Capacity
 def cp313_calc_rule(m):
-    return m.Cp_313_calc == sum(m.N_Cp[i] * m.cp313[i] for i in m.Cp_Groups)
+    return model.Cp_313_calc == sum(model.N_Cp[i] * model.cp313[i] for i in model.Cp_Groups)
 model.cp313_sum = pe.Constraint(rule=cp313_calc_rule)
 
 def cp393_calc_rule(m):
-    return m.Cp_393_calc == sum(m.N_Cp[i] * m.cp393[i] for i in m.Cp_Groups)
+    return model.Cp_393_calc == sum(model.N_Cp[i] * model.cp393[i] for i in model.Cp_Groups)
 model.cp393_sum = pe.Constraint(rule=cp393_calc_rule)
 
 # Structural Feasibility
@@ -212,9 +184,9 @@ model.c_octet = pe.Constraint(
 
 # Bonding Rule
 def bonding_rule(m, j):
-    total_groups = sum(m.N[i] for i in m.G1_Hukkerikar)
+    total_groups = sum(model.N[i] for i in model.G1_Hukkerikar)
     # N_j * (Valency_j - 1) + 2 <= Total_Number_of_Groups
-    return m.N[j] * (m.valency[j] - 1) + 2 <= total_groups
+    return model.N[j] * (model.valency[j] - 1) + 2 <= total_groups
 model.c_bonding = pe.Constraint(model.G1_Hukkerikar, rule=bonding_rule)
 
 # Upper Bound on size
@@ -222,28 +194,25 @@ model.c_num_of_groups = pe.Constraint(
     expr = sum(model.N[i] for i in model.G1_Hukkerikar) <= UB_num_groups
 )
 
-# Force 2nd-order groups to 0 (will actually just delete all 2nd order parts eventually...)
-def fix_M_zero_rule(m, j):
-    return m.M[j] == 0
-model.c_fix_M = pe.Constraint(model.G2_Hukkerikar, rule=fix_M_zero_rule)
+
 
 # Property Calculations
 small_epsilon = 1e-6
 
-model.f_Tb_expr = pe.Expression(expr=sum(model.N[i] * model.C_Tb[i] for i in model.G1_Hukkerikar) + sum(model.M[j] * model.D_Tb[j] for j in model.G2_Hukkerikar))
-model.f_Tm_expr = pe.Expression(expr=sum(model.N[i] * model.C_Tm[i] for i in model.G1_Hukkerikar) + sum(model.M[j] * model.D_Tm[j] for j in model.G2_Hukkerikar))
+model.f_Tb_expr = pe.Expression(expr=sum(model.N[i] * model.C_Tb[i] for i in model.G1_Hukkerikar))
+model.f_Tm_expr = pe.Expression(expr=sum(model.N[i] * model.C_Tm[i] for i in model.G1_Hukkerikar))
 
 model.c_Tb_calc = pe.Constraint(expr= model.Tb_calc == model.Tb0 * pe.log(model.f_Tb_expr + small_epsilon))
 model.c_Tm_calc = pe.Constraint(expr= model.Tm_calc == model.Tm0 * pe.log(model.f_Tm_expr + small_epsilon))
 
 model.MW_calc_expr = pe.Expression(expr=sum(model.N[i] * model.MW[i] for i in model.G1_Hukkerikar))
-model.Vm_calc_expr = pe.Expression(expr=model.Vm0 + sum(model.N[i] * model.C_Vm[i] for i in model.G1_Hukkerikar) + sum(model.M[j] * model.D_Vm[j] for j in model.G2_Hukkerikar))
+model.Vm_calc_expr = pe.Expression(expr=model.Vm0 + sum(model.N[i] * model.C_Vm[i] for i in model.G1_Hukkerikar))
 
 model.c_rho_calc = pe.Constraint(expr= model.rho_calc * model.Vm_calc_expr == model.MW_calc_expr)
 
-model.f_dD_expr = pe.Expression(expr=sum(model.N[i] * model.C_dD[i] for i in model.G1_Hukkerikar) + sum(model.M[j] * model.D_dD[j] for j in model.G2_Hukkerikar))
-model.f_dP_expr = pe.Expression(expr=sum(model.N[i] * model.C_dP[i] for i in model.G1_Hukkerikar) + sum(model.M[j] * model.D_dP[j] for j in model.G2_Hukkerikar))
-model.f_dH_expr = pe.Expression(expr=sum(model.N[i] * model.C_dH[i] for i in model.G1_Hukkerikar) + sum(model.M[j] * model.D_dH[j] for j in model.G2_Hukkerikar))
+model.f_dD_expr = pe.Expression(expr=sum(model.N[i] * model.C_dD[i] for i in model.G1_Hukkerikar))
+model.f_dP_expr = pe.Expression(expr=sum(model.N[i] * model.C_dP[i] for i in model.G1_Hukkerikar))
+model.f_dH_expr = pe.Expression(expr=sum(model.N[i] * model.C_dH[i] for i in model.G1_Hukkerikar))
 
 dD_term = model.f_dD_expr - model.delta_D_CO2
 dP_term = model.f_dP_expr - model.delta_P_CO2
@@ -260,7 +229,7 @@ model.c_Tm_max = pe.Constraint(expr= model.Tm_calc <= 313.0)
 
 # Objective Function
 def objective_rule(m):
-    return 1.0 * m.RED_calc + 1.0 * m.Cp_313_calc - 1.0 * m.rho_calc
+    return 1.0 * model.RED_calc + 1.0 * model.Cp_313_calc - 1.0 * model.rho_calc
 model.obj = pe.Objective(rule=objective_rule, sense=pe.minimize)
 
 print("\nModel built successfully!")
