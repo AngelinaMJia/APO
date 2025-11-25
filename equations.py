@@ -226,10 +226,24 @@ model.c_RED_calc = pe.Constraint(expr= (model.RED_calc)**2 == Ra_squared)
 model.c_Tb_min = pe.Constraint(expr= model.Tb_calc >= 393.0)
 model.c_Tm_max = pe.Constraint(expr= model.Tm_calc <= 313.0)
 
+model.rho_max = pe.Param(initialize=1633.35)
+model.rho_min = pe.Param(initialize=716.15)
+model.cp_313_max = pe.Param(initialize=795.83)
+model.cp_313_min = pe.Param(initialize=91.76)
+model.cp_393_max = pe.Param(initialize=1007.34)
+model.cp_393_min = pe.Param(initialize=145.34)
+
+model.rho_norm = pe.Expression(expr= (model.rho_calc - model.rho_min) / (model.rho_max - model.rho_min))
+model.Cp_313_norm = pe.Expression(expr= (model.Cp_313_calc - model.cp_313_min) / (model.cp_313_max - model.cp_313_min))
+model.Cp_393_norm = pe.Expression(expr= (model.Cp_393_calc - model.cp_393_min) / (model.cp_393_max - model.cp_393_min))   
 
 # Objective Function
-def objective_rule(m):
-    return 1.0 * model.RED_calc + 1.0 * model.Cp_313_calc + 1.0 * model.Cp_393_calc - 0.001 * model.rho_calc
+#def objective_rule(model):
+#    return 1.0 * model.RED_calc + 1.0 * model.Cp_313_calc + 1.0 * model.Cp_393_calc - 0.001 * model.rho_calc
+#model.obj = pe.Objective(rule=objective_rule, sense=pe.minimize)
+
+def objective_rule(model):
+    return model.RED_calc + model.Cp_313_norm + model.Cp_393_norm - model.rho_norm
 model.obj = pe.Objective(rule=objective_rule, sense=pe.minimize)
 
 print("\nModel built successfully!")
