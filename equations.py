@@ -134,7 +134,7 @@ model.Cp_313_calc = pe.Var(bounds=(0, None))
 model.Cp_393_calc = pe.Var(bounds=(0, None))
 
 # Linking Groups from Both Reports (Need to double check this is complete/correct)
-def N_Cp_mapping_rule(m, cp_group):
+def N_Cp_mapping_rule(model, cp_group):
     if cp_group == 'CH3':
         return model.N['CH3'] + model.N['CH3NH'] + model.N['CH3N'] + model.N['CH3CO']
     if cp_group == 'CH2':
@@ -168,11 +168,11 @@ model.N_Cp = pe.Expression(model.Cp_Groups, rule=N_Cp_mapping_rule)
 # Constraints
 
 # Heat Capacity
-def cp313_calc_rule(m):
+def cp313_calc_rule(model):
     return model.Cp_313_calc == sum(model.N_Cp[i] * model.cp313[i] for i in model.Cp_Groups)
 model.cp313_sum = pe.Constraint(rule=cp313_calc_rule)
 
-def cp393_calc_rule(m):
+def cp393_calc_rule(model):
     return model.Cp_393_calc == sum(model.N_Cp[i] * model.cp393[i] for i in model.Cp_Groups)
 model.cp393_sum = pe.Constraint(rule=cp393_calc_rule)
 
@@ -183,7 +183,7 @@ model.c_octet = pe.Constraint(
 )
 
 # Bonding Rule
-def bonding_rule(m, j):
+def bonding_rule(model, j):
     total_groups = sum(model.N[i] for i in model.G1_Hukkerikar)
     # N_j * (Valency_j - 1) + 2 <= Total_Number_of_Groups
     return model.N[j] * (model.valency[j] - 1) + 2 <= total_groups
@@ -229,7 +229,7 @@ model.c_Tm_max = pe.Constraint(expr= model.Tm_calc <= 313.0)
 
 # Objective Function
 def objective_rule(m):
-    return 1.0 * model.RED_calc + 1.0 * model.Cp_313_calc - 1.0 * model.rho_calc
+    return 1.0 * model.RED_calc + 1.0 * model.Cp_313_calc + 1.0 * model.Cp_393_calc - 0.001 * model.rho_calc
 model.obj = pe.Objective(rule=objective_rule, sense=pe.minimize)
 
 print("\nModel built successfully!")
