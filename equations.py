@@ -40,6 +40,10 @@ model.G1_Hukkerikar = pe.Set(initialize=[
     'CH=N',    # Group #66 ('=N')
 ])
 
+#limit on number of unsaturated bonds
+unsaturated= ['CH2=CH', 'CH=CH', 'CH=N']
+
+
 # --- Heat Capacity Group Set ---
 # ONLY for heat capacity equations, groups differ for other method
 model.Cp_Groups = pe.Set(initialize=[
@@ -192,6 +196,11 @@ model.c_bonding = pe.Constraint(model.G1_Hukkerikar, rule=bonding_rule)
 # Upper Bound on size
 model.c_num_of_groups = pe.Constraint(
     expr = sum(model.N[i] for i in model.G1_Hukkerikar) <= UB_num_groups
+)
+
+#constaint on saturated groups
+model.max_unsat = pe.Constraint(
+    expr = sum(model.N[g] for g in unsaturated) <= 1
 )
 
 
