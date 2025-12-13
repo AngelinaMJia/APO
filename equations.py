@@ -40,8 +40,6 @@ model.G1_Hukkerikar = pe.Set(initialize=[
     'CH=N',    # Group #66 ('=N')
 ])
 
-#limit on number of unsaturated bonds
-unsaturated= ['CH2=CH', 'CH=CH', 'CH=N']
 
 
 # --- Heat Capacity Group Set ---
@@ -134,8 +132,8 @@ model.Tb_calc = pe.Var(domain=pe.Reals, bounds=(200, 1000))
 model.Tm_calc = pe.Var(domain=pe.Reals, bounds=(100, 600))
 model.rho_calc = pe.Var(domain=pe.Reals, bounds=(500, 2000))
 model.RED_calc = pe.Var(domain=pe.Reals, bounds=(0, 10000))
-model.Cp_313_calc = pe.Var(bounds=(0, None))
-model.Cp_393_calc = pe.Var(bounds=(0, None))
+model.Cp_313_calc = pe.Var(domain=pe.Reals, bounds=(0, None))
+model.Cp_393_calc = pe.Var(domain=pe.Reals, bounds=(0, None))
 
 # Linking Groups from Both Reports (Need to double check this is complete/correct)
 def N_Cp_mapping_rule(model, cp_group):
@@ -198,10 +196,7 @@ model.c_num_of_groups = pe.Constraint(
     expr = sum(model.N[i] for i in model.G1_Hukkerikar) <= UB_num_groups
 )
 
-#constaint on saturated groups
-model.max_unsat = pe.Constraint(
-    expr = sum(model.N[g] for g in unsaturated) <= 1
-)
+
 
 
 
